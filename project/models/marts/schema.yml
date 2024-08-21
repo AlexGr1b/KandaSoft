@@ -1,0 +1,45 @@
+# This is data presentation schema where data is aggregated and organized into business-friendly tables and models
+# for reporting and analysis
+version: 2
+
+models:
+  - name: dim_events
+    description: "Represents information about events. I decided not flatten EventDetails because I don't know business logic. This column can be parsed on flight or if needed structure of table can be changed"
+    columns:
+      - name: event_sk
+        description: Event surrogate key
+        data_tests:
+         - unique
+         - not_null
+
+  - name: dim_groups
+    description: "Groups dimensional table"
+    columns:
+      - name: group_sk
+        description: Group surrogate key
+        data_tests:
+         - not_null
+
+  - name: dim_participants
+    description: "Represents information about participants."
+    columns:
+      - name: participant_sk
+        description: Participant surrogate key
+        data_tests:
+          - not_null
+
+  - name: dim_egp_bridge
+    description: "To sync dimensions between each other. Using bridge can be usefully in this case if you need investigate and analyse information only about participants or groups for specific events. Without necessity of joining data from fact tables,which has the highest granularity."
+
+  - name: fact_outcomes
+    description: "Represents information about event's outcomes. Table has most granularity as a result was selected as fact table"
+    columns:
+      - name: market_id
+        description: Market source key
+        data_tests:
+         - not_null
+      - name: outcome_id
+        description: Outcome source key
+        data_tests:
+          - unique
+          - not_null

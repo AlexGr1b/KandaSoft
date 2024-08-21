@@ -1,0 +1,93 @@
+version: "3"
+
+
+networks:
+  project_network:
+    external: true
+
+volumes:
+  project_airflow_database:
+  project_airflow:
+
+
+x-airflow-common:
+  &airflow-common
+  image: airflow-with-dbt:latest
+  entrypoint: /bin/bash -c "/bin/bash -c \"$${@}\""
+  restart: always
+  networks:
+    - project_network
+  volumes:
+    - ./pipelines:/opt/airflow/dags/pipelines
+    - ./project:/opt/airflow/dags/pipelines/project
+    - ./.dbt:/opt/airflow/dags/pipelines/.dbt
+    - project_airflow:/opt/airflow/logs
+    - project_airflow:/opt/airflow/plugins
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@project-airflow-database:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: false
+
+
+services:
+
+  project-airflow-database:
+    image: postgres:latest
+    container_name: project-airflow-database
+    hostname: project-airflow-database
+    networks:
+      - project_network
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - project_airflow_database:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+
+  project-airflow-scheduler:
+    <<: *airflow-common
+    container_name: project-airflow-scheduler
+    networks:
+      - project_network
+    hostname: project-airflow-scheduler
+    command: |
+      /bin/bash -c "
+        airflow db migrate
+        airflow connections add 'project_database' --conn-type 'postgres' --conn-login 'postgres' --conn-password 'postgres' --conn-host 'localhost' --conn-port '5432' --conn-schema 'project'
+        airflow users create -r Admin -u admin -e airflow@airflow.com -f admin -l user -p airflow
+        airflow scheduler
+        pip install apache-airflow-providers-postgres
+      "
+    environment:
+      <<: *airflow-common-env
+    depends_on:
+      project-airflow-database:
+        condition: service_healthy
+
+
+  project-airflow-webserver:
+    <<: *airflow-common
+    container_name: project-airflow-webserver
+    hostname: project-airflow-webserver
+    networks:
+      - project_network
+    command: |
+      /bin/bash -c "
+        airflow webserver
+      "
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *airflow-common-env
+    depends_on:
+      - project-airflow-scheduler

@@ -1,0 +1,12 @@
+# This schema is where main data transformation and data consolidation occurs. In our case it's just data deduplication
+version: 2
+
+models:
+  - name: int_events
+    description: "Table contains unique events data"
+    columns:
+      - name: event_id
+        description: Primary key
+        data_tests:
+         - unique
+         - not_null

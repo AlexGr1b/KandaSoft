@@ -1,0 +1,14 @@
+# Here we define all sources for our data
+version: 2
+
+sources:
+  - name: postgres
+    database: project
+    schema: landing
+    description: Contains raw data
+    # freshness: # Data freshness can be defined here
+
+    tables:
+      - name: api_data
+        identifier: api_data
+    

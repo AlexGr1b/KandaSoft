@@ -1,0 +1,12 @@
+# This schema is where raw data undergoes simple transformations, such as parsing and extraction,
+# to prepare it for integration into business model tables.
+version: 2
+
+models:
+  - name: stg_events
+    description: "Events dimensional table"
+    columns:
+      - name: event_id
+        description: Event source ID
+        data_tests:
+         - not_null

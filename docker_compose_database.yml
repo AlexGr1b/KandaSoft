@@ -1,0 +1,55 @@
+version: "3"
+
+
+networks:
+  project_network:
+    external: true
+
+
+volumes:
+  project_postgres:
+  project_liquibase:
+
+
+services:
+
+  project_database:
+    container_name: project_database
+    hostname: localhost
+    image: postgres:latest
+    networks:
+      - project_network
+    volumes:
+      - project_postgres:/var/lib/postgresql/data
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: project
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+
+  project_liquibase:
+    container_name: project_liquibase
+    hostname: localhost
+    image: liquibase/liquibase:latest
+    networks:
+      - project_network
+    volumes:
+      - ./database:/liquibase/changelog
+      - project_liquibase:/liquibase/classpath
+    command:
+      - --changeLogFile=master_changelog.xml
+      - --url=jdbc:postgresql://localhost:5432/project
+      - --username=postgres
+      - --password=postgres
+      - update
+    depends_on:
+      project_database:
+        condition: service_healthy

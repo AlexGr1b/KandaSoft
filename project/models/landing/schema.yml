@@ -1,0 +1,11 @@
+# This schema is to receive & store raw data as it is.
+version: 2
+
+models:
+  - name: lnd_api_data
+    description: "Table contains raw API responses"
+    columns:
+      - name: raw
+        description: Raw API response saved in JSON format
+      - name: loaded_at
+        description: UTC timestamp when data was extracted from the API and written here
